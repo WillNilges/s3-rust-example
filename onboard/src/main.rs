@@ -1,7 +1,7 @@
 use aws_sdk_s3 as s3;
-use aws_sdk_s3::Endpoint;
-
-use aws_sdk_s3::{Client, Error};
+use aws_sdk_s3::{Client, Endpoint, Error};
+use aws_sdk_s3::presigning::config::PresigningConfig;
+use std::time::Duration;
 
 use gtk4::prelude::*;
 use gtk4::{Application, ApplicationWindow};
@@ -45,8 +45,27 @@ fn build_ui(app: &Application) {
     window.present();
 }
 
+async fn get_object(
+    client: &Client,
+    bucket: &str,
+    object: &str,
+    expires_in: u64,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let expires_in = Duration::from_secs(expires_in);
+    let presigned_request = client
+        .get_object()
+        .bucket(bucket)
+        .key(object)
+        .presigned(PresigningConfig::expires_in(expires_in)?)
+        .await?;
+
+    println!("Object URI: {}", presigned_request.uri());
+
+    Ok(())
+}
+
 #[tokio::main]
-async fn main() -> Result<(), Error> {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Load configuration and credentials from the environment.
     let shared_config = aws_config::load_from_env().await;
@@ -59,17 +78,22 @@ async fn main() -> Result<(), Error> {
     // Create an S3 client to send requests to S3 Object Lambda.
     let client = s3::Client::from_conf(s3_config);
 
+    let bucket = "devcade-games";
+    let object = "bankshot.zip";
+
     show_buckets(&client).await;
     show_objects(&client, "devcade-games").await;
 
+    get_object(&client, &bucket, &object, 900).await
+
+    /*
     // Create a new application
     let app = Application::builder().application_id(APP_ID).build();
 
     app.connect_activate(build_ui);
 
     // Run the application
-    app.run();
+    app.run();*/
 
-    Ok(())
 }
 
