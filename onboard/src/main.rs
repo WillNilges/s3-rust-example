@@ -2,6 +2,8 @@ use aws_sdk_s3 as s3;
 use aws_sdk_s3::{Client, Endpoint, Error};
 use aws_sdk_s3::presigning::config::PresigningConfig;
 use std::time::Duration;
+use std::io::Cursor;
+use http::Uri;
 
 use gtk4::prelude::*;
 use gtk4::{Application, ApplicationWindow};
@@ -50,7 +52,7 @@ async fn get_object(
     bucket: &str,
     object: &str,
     expires_in: u64,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<String, Box<dyn std::error::Error>> {
     let expires_in = Duration::from_secs(expires_in);
     let presigned_request = client
         .get_object()
@@ -61,6 +63,14 @@ async fn get_object(
 
     println!("Object URI: {}", presigned_request.uri());
 
+    Ok(presigned_request.uri().to_string())
+}
+
+async fn download_game(uri: String, destination: String) -> Result<(), Box<dyn std::error::Error>> {
+    let response = reqwest::get(uri).await?;
+    let mut file = std::fs::File::create(destination)?;
+    let mut content = Cursor::new(response.bytes().await?);
+    std::io::copy(&mut content, &mut file)?;
     Ok(())
 }
 
@@ -84,7 +94,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     show_buckets(&client).await;
     show_objects(&client, "devcade-games").await;
 
-    get_object(&client, &bucket, &object, 900).await
+    let gameUri = get_object(&client, &bucket, &object, 900).await?;
+
+    download_game(gameUri, "bankshot.zip".to_string()).await;
+
+    Ok(())
 
     /*
     // Create a new application
