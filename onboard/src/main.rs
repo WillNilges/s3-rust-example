@@ -3,6 +3,11 @@ use aws_sdk_s3::Endpoint;
 
 use aws_sdk_s3::{Client, Error};
 
+use gtk4::prelude::*;
+use gtk4::{Application, ApplicationWindow};
+
+const APP_ID: &str = "edu.csh.rit.devcade.onboard";
+
 // Shows your buckets in the endpoint.
 async fn show_buckets(client: &Client) -> Result<(), Error> {
     let resp = client.list_buckets().send().await?;
@@ -29,6 +34,17 @@ async fn show_objects(client: &Client, bucket: &str) -> Result<(), Error> {
     Ok(())
 }
 
+fn build_ui(app: &Application) {
+    // Create a window and set the title
+    let window = ApplicationWindow::builder()
+        .application(app)
+        .title("My GTK App")
+        .build();
+
+    // Present window
+    window.present();
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Error> {
 
@@ -44,6 +60,16 @@ async fn main() -> Result<(), Error> {
     let client = s3::Client::from_conf(s3_config);
 
     show_buckets(&client).await;
-    show_objects(&client, "devcade-games").await
+    show_objects(&client, "devcade-games").await;
+
+    // Create a new application
+    let app = Application::builder().application_id(APP_ID).build();
+
+    app.connect_activate(build_ui);
+
+    // Run the application
+    app.run();
+
+    Ok(())
 }
 
