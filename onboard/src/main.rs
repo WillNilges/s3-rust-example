@@ -3,10 +3,9 @@ use aws_sdk_s3::{Client, Endpoint, Error};
 use aws_sdk_s3::presigning::config::PresigningConfig;
 use std::time::Duration;
 use std::io::Cursor;
-use http::Uri;
 
 use gtk4::prelude::*;
-use gtk4::{Application, ApplicationWindow};
+use gtk4::{Application, ApplicationWindow, Button};
 
 const APP_ID: &str = "edu.csh.rit.devcade.onboard";
 
@@ -36,17 +35,7 @@ async fn show_objects(client: &Client, bucket: &str) -> Result<(), Error> {
     Ok(())
 }
 
-fn build_ui(app: &Application) {
-    // Create a window and set the title
-    let window = ApplicationWindow::builder()
-        .application(app)
-        .title("My GTK App")
-        .build();
-
-    // Present window
-    window.present();
-}
-
+// Builds a valid URI from which you can literally just download the file
 async fn get_object(
     client: &Client,
     bucket: &str,
@@ -66,6 +55,7 @@ async fn get_object(
     Ok(presigned_request.uri().to_string())
 }
 
+// Downloads a game from a generated URI
 async fn download_game(uri: String, destination: String) -> Result<(), Box<dyn std::error::Error>> {
     let response = reqwest::get(uri).await?;
     let mut file = std::fs::File::create(destination)?;
@@ -73,6 +63,35 @@ async fn download_game(uri: String, destination: String) -> Result<(), Box<dyn s
     std::io::copy(&mut content, &mut file)?;
     Ok(())
 }
+
+// GUI Functions
+fn build_ui(app: &Application) {
+    // Create a button with label and margins
+    let button = Button::builder()
+        .label("Press me!")
+        .margin_top(12)
+        .margin_bottom(12)
+        .margin_start(12)
+        .margin_end(12)
+        .build();
+
+    // Connect to "clicked" signal of `button`
+    button.connect_clicked(move |button| {
+        // Set the label to "Hello World!" after the button has been clicked on
+        button.set_label("Hello World!");
+    });
+
+    // Create a window
+    let window = ApplicationWindow::builder()
+        .application(app)
+        .title("My GTK App")
+        .child(&button)
+        .build();
+
+    // Present window
+    window.present();
+}
+
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -90,24 +109,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let bucket = "devcade-games";
     let object = "bankshot.zip";
+    let devcade_games_dir = "/tmp/devcade_games/";
 
-    show_buckets(&client).await;
-    show_objects(&client, "devcade-games").await;
+    show_buckets(&client).await?;
+    show_objects(&client, "devcade-games").await?;
 
-    let gameUri = get_object(&client, &bucket, &object, 900).await?;
+    let game_uri = get_object(&client, &bucket, &object, 900).await?;
 
-    download_game(gameUri, "bankshot.zip".to_string()).await;
+    // Download game, create directory if we need to.
+    std::fs::create_dir(devcade_games_dir)?;
+    download_game(game_uri, format!("{}{}", devcade_games_dir, object).to_string()).await?;
 
-    Ok(())
-
-    /*
     // Create a new application
     let app = Application::builder().application_id(APP_ID).build();
 
     app.connect_activate(build_ui);
 
     // Run the application
-    app.run();*/
+    app.run();
 
+    Ok(())
 }
 
