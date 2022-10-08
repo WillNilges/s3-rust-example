@@ -19,6 +19,16 @@ async fn show_buckets(client: &Client) -> Result<(), Error> {
     Ok(())
 }
 
+async fn show_objects(client: &Client, bucket: &str) -> Result<(), Error> {
+    let resp = client.list_objects_v2().bucket(bucket).send().await?;
+
+    for object in resp.contents().unwrap_or_default() {
+        println!("{}", object.key().unwrap_or_default());
+    }
+
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Error> {
 
@@ -33,6 +43,7 @@ async fn main() -> Result<(), Error> {
     // Create an S3 client to send requests to S3 Object Lambda.
     let client = s3::Client::from_conf(s3_config);
 
-    show_buckets(&client).await
+    show_buckets(&client).await;
+    show_objects(&client, "devcade-games").await
 }
 
