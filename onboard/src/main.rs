@@ -1,25 +1,38 @@
-use std::env;
-use std::time::Duration;
-use rusty_s3::{Bucket, Credentials, S3Action, UrlStyle};
+use aws_sdk_s3 as s3;
+use aws_sdk_s3::Endpoint;
 
-fn main() {
-    let access_key = "devcade2022AccessKeyinconstantly38254-unaccomplished";
-    let secret_key = "devcade2022SecretKeylabor-intensive1699-wretchedness";
+use aws_sdk_s3::{Client, Error};
 
-    // setting up a bucket
-    let endpoint = "https://s3.csh.rit.edu".parse().expect("endpoint is a valid Url");
-    let path_style = UrlStyle::VirtualHost;
-    let name = "devcade-games";
-    //let region = "eu-west-1";
-    let bucket = Bucket::new(endpoint, path_style, name, "").expect("Url has a valid scheme and host");
+// Shows your buckets in the endpoint.
+async fn show_buckets(client: &Client) -> Result<(), Error> {
+    let resp = client.list_buckets().send().await?;
+    let buckets = resp.buckets().unwrap_or_default();
+    let num_buckets = buckets.len();
 
-    // setting up the credentials
-    //let key = env::var(access_key).expect("AWS_ACCESS_KEY_ID is set and a valid String");
-    //let secret = env::var(secret_key).expect("AWS_ACCESS_KEY_ID is set and a valid String");
-    let credentials = Credentials::new(access_key, secret_key);
+    for bucket in buckets {
+        println!("{}", bucket.name().unwrap_or_default());
+    }
 
-    // signing a request
-    let presigned_url_duration = Duration::from_secs(60 * 60);
-    let action = bucket.get_object(Some(&credentials), "bankshot.zip");
-    println!("GET {}", action.sign(presigned_url_duration));
+    println!();
+    println!("Found {} buckets.", num_buckets);
+
+    Ok(())
 }
+
+#[tokio::main]
+async fn main() -> Result<(), Error> {
+
+    // Load configuration and credentials from the environment.
+    let shared_config = aws_config::load_from_env().await;
+
+    // Create an S3 config from the shared config and override the endpoint resolver.
+    let s3_config = s3::config::Builder::from(&shared_config)
+        .endpoint_resolver(Endpoint::immutable("https://s3.csh.rit.edu".parse().expect("valid URI")))
+        .build();
+
+    // Create an S3 client to send requests to S3 Object Lambda.
+    let client = s3::Client::from_conf(s3_config);
+
+    show_buckets(&client).await
+}
+
