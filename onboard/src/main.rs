@@ -4,12 +4,12 @@ use devcade_s3::S3;
 mod data_set;
 
 use gtk4::prelude::*;
-use gtk4::{Application, ApplicationWindow, Button, gio, glib, gdk};
+use gtk4::{Application};
 const APP_ID: &str = "edu.csh.rit.devcade.onboard";
 
 // GUI Functions
 
-fn build_ui(app: &gtk4::Application) {
+fn build_ui(app: &gtk4::Application, s3_conn: &S3) {
     let window = gtk4::ApplicationWindow::builder()
         .default_width(600)
         .default_height(600)
@@ -41,13 +41,13 @@ fn build_ui(app: &gtk4::Application) {
 
 fn create_game_entry(game: &'static str) -> gtk4::Button {
     let button = gtk4::Button::new();
-    let drawing_area = gtk4::DrawingArea::builder()
+    /*let drawing_area = gtk4::DrawingArea::builder()
         .content_height(24)
         .content_width(24)
-        .build();
+        .build();*/
 
     button.set_label(game);
-    button.connect_clicked( move |game| {
+    button.connect_clicked( move |_| {
         println!("Chom: {}", game);
     });
     button
@@ -57,7 +57,7 @@ fn create_game_entry(game: &'static str) -> gtk4::Button {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let s3_conn = S3::connect_s3().await?;
-
+    /*
     let bucket = "devcade-games";
     let object = "bankshot.zip";
     let devcade_games_dir = "/tmp/devcade_games/";
@@ -70,13 +70,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                                                     // expiry time. Try increasing it.
 
     // Download game, create directory if we need to.
-//    std::fs::create_dir(devcade_games_dir)?;
-//    S3::download_game(game_uri, format!("{}{}", devcade_games_dir, object).to_string()).await?;
+    std::fs::create_dir(devcade_games_dir)?;
+    S3::download_game(game_uri, format!("{}{}", devcade_games_dir, object).to_string()).await?;
+    */
 
     // Create a new application
     let app = Application::builder().application_id(APP_ID).build();
 
-    app.connect_activate(build_ui);
+    //app.connect_activate(build_ui);
+    // Connect to "activate" signal of `app`
+    app.connect_activate(move |app: &Application| {
+        build_ui(app, &s3_conn);
+    });
 
     // Run the application
     app.run();
