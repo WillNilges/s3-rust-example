@@ -15,11 +15,20 @@ fn build_ui(app: &gtk4::Application, s3_conn: &S3) {
         .application(app)
         .title("Devcade")
         .build();
+/*
+    let welcome = gtk4::Text::builder()
+        .placeholder_text("Welcome to Devcade")
+        .build();
+*/
 
-    let flow_box = gtk4::FlowBox::builder()
+    let my_label = gtk4::Label::builder()
+          .margin_top(8)
+          .margin_bottom(8)
+          .label("Welcome to Devcade")
+          .build();
+
+    let flow_box = gtk4::ListBox::builder()
         .valign(gtk4::Align::Start)
-        .max_children_per_line(30)
-        .min_children_per_line(4)
         .selection_mode(gtk4::SelectionMode::None)
         .build();
 
@@ -34,6 +43,7 @@ fn build_ui(app: &gtk4::Application, s3_conn: &S3) {
         .child(&flow_box)
         .build();
 
+    window.set_child(Some(&my_label));
     window.set_child(Some(&scrolled_window));
     window.show();
 }
