@@ -8,13 +8,12 @@ use gtk4::{Application};
 const APP_ID: &str = "edu.csh.rit.devcade.onboard";
 
 // GUI Functions
-
 fn build_ui(app: &gtk4::Application, s3_conn: &S3) {
     let window = gtk4::ApplicationWindow::builder()
         .default_width(600)
         .default_height(600)
         .application(app)
-        .title("FlowBox")
+        .title("Devcade")
         .build();
 
     let flow_box = gtk4::FlowBox::builder()
@@ -25,8 +24,8 @@ fn build_ui(app: &gtk4::Application, s3_conn: &S3) {
         .build();
 
     data_set::GAMES.iter().for_each(|game| {
-        let color_widget = create_game_entry(game);
-        flow_box.insert(&color_widget, -1);
+        let game_widget = create_game_entry(game, s3_conn);
+        flow_box.insert(&game_widget, -1);
     });
 
     let scrolled_window = gtk4::ScrolledWindow::builder()
@@ -39,24 +38,29 @@ fn build_ui(app: &gtk4::Application, s3_conn: &S3) {
     window.show();
 }
 
-fn create_game_entry(game: &'static str) -> gtk4::Button {
+fn create_game_entry(game: &'static str, s3_conn: &S3) -> gtk4::Button {
     let button = gtk4::Button::new();
-    /*let drawing_area = gtk4::DrawingArea::builder()
-        .content_height(24)
-        .content_width(24)
-        .build();*/
+    let connection = s3_conn.clone();
+    let game_title = game.clone();
 
     button.set_label(game);
-    button.connect_clicked( move |_| {
-        println!("Chom: {}", game);
+    button.connect_clicked(move |_button| {
+        println!("Chom {}", game_title);
+        let conn = connection.clone();
+        tokio::spawn(async move {
+            match conn.get_game("devcade-games", game_title, "/tmp/devcade_games/").await {
+                Ok(()) => {println!("Chom!! :)");},
+                _ => {println!("Shit.");}
+            }
+        });
     });
     button
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-
     let s3_conn = S3::connect_s3().await?;
+
     /*
     let bucket = "devcade-games";
     let object = "bankshot.zip";

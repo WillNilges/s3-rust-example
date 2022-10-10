@@ -4,6 +4,7 @@ use aws_sdk_s3::presigning::config::PresigningConfig;
 use std::time::Duration;
 use std::io::Cursor;
 
+#[derive(Clone)]
 pub struct S3 {
     pub client: Client,
 }
@@ -55,6 +56,15 @@ impl S3 {
         Ok(presigned_request.uri().to_string())
     }
 
+    pub async fn get_game(&self, bucket: &str, object: &str, directory: &str) -> Result<(), Box<dyn std::error::Error>> {
+        // TODO (willnilges): if this doesn't work, I reduced the expiry time. Try increasing it.
+        println!("Oh hey that wasn't supposed to work. {}, {}", bucket, object); 
+        let game_uri = self.get_object(&bucket, &object, 90).await?; 
+        // Download game, create directory if we need to.
+        std::fs::create_dir(&directory)?;
+        S3::download_game(game_uri, format!("{}{}", directory, object).to_string()).await
+    }
+
     pub async fn connect_s3() -> Result<S3, Box<dyn std::error::Error>> {
         // Load configuration and credentials from the environment.
         let shared_config = aws_config::load_from_env().await;
@@ -65,7 +75,7 @@ impl S3 {
             .build();
 
         // Create an S3 client to send requests to S3 Object Lambda.
-        Ok(S3{ client: s3::Client::from_conf(s3_config), })
+        Ok(S3{ client: s3::Client::from_conf(s3_config) })
     }
 
     // Downloads a game from a generated URI
