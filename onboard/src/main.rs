@@ -15,6 +15,10 @@ fn build_ui(app: &gtk4::Application, s3_conn: &S3) {
         .application(app)
         .title("Devcade")
         .build();
+
+    let gtk_box = gtk4::Box::builder()
+        .orientation(gtk4::Orientation::Vertical)
+        .build();
 /*
     let welcome = gtk4::Text::builder()
         .placeholder_text("Welcome to Devcade")
@@ -27,24 +31,28 @@ fn build_ui(app: &gtk4::Application, s3_conn: &S3) {
           .label("Welcome to Devcade")
           .build();
 
-    let flow_box = gtk4::ListBox::builder()
+    let list_box = gtk4::ListBox::builder()
         .valign(gtk4::Align::Start)
         .selection_mode(gtk4::SelectionMode::None)
         .build();
 
     data_set::GAMES.iter().for_each(|game| {
         let game_widget = create_game_entry(game, s3_conn);
-        flow_box.insert(&game_widget, -1);
+        list_box.insert(&game_widget, -1);
     });
 
     let scrolled_window = gtk4::ScrolledWindow::builder()
         .hscrollbar_policy(gtk4::PolicyType::Never) // Disable horizontal scrolling
-        .min_content_width(360)
-        .child(&flow_box)
+        .min_content_width(250)
+        .min_content_height(200)
+        .child(&list_box)
         .build();
 
-    window.set_child(Some(&my_label));
-    window.set_child(Some(&scrolled_window));
+    gtk_box.append(&my_label);
+    gtk_box.append(&scrolled_window);
+
+    window.set_child(Some(&gtk_box));
+//    window.set_child(Some(&scrolled_window));
     window.show();
 }
 
@@ -69,7 +77,7 @@ fn create_game_entry(game: &'static str, s3_conn: &S3) -> gtk4::Button {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let s3_conn = S3::connect_s3().await?;
+    let s3_conn = S3::connect_s3().await?; // remember to `source .env`
 
     /*
     let bucket = "devcade-games";

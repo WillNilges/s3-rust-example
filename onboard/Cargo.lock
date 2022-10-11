@@ -1230,7 +1230,6 @@ dependencies = [
  "aws-sdk-s3",
  "gtk4",
  "http",
- "lazy_static",
  "reqwest",
  "tokio",
 ]
