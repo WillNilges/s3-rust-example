@@ -58,7 +58,7 @@ impl S3 {
 
     pub async fn get_game(&self, bucket: &str, object: &str, directory: &str) -> Result<(), Box<dyn std::error::Error>> {
         // TODO (willnilges): if this doesn't work, I reduced the expiry time. Try increasing it.
-        println!("Oh hey that wasn't supposed to work. {}, {}", bucket, object); 
+        println!("Getting object: {}, {}", bucket, object); 
         let game_uri = self.get_object(&bucket, &object, 90).await?; 
         // Download game, create directory if we need to.
         std::fs::create_dir(&directory)?;
